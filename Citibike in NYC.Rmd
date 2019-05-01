@@ -1,0 +1,373 @@
+---
+title: "Citi Bike Program in NYC"
+author: "Jongyoon Sohn, Daniel Lee"
+date: "4/18/2019"
+output:
+  html_document:
+    code_folding: hide
+    df_print: paged
+  pdf_document:
+    always_allow_html: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r, echo=FALSE, message=FALSE}
+library(tidyverse)
+library(lubridate)
+library(shiny)
+library(leaflet)
+library(leaflet.extras)
+library(magrittr)
+library(ggridges)
+library(ggplot2)
+library(dplyr)
+library(plotly)
+```
+
+## I. Introduction
+
+Citi bike is a privately owned public bicycle sharing system based in new york city, having stations in Manhattan, Queens, Brooklyn and Jersey city. It was named Citi bike because Citigroup lead the sponsorship. It was first opened in May 2013 with 332 stations and 6,000 bikes. Now, they have 757 active stations with around 12,000 bikes.
+
+As of July 2017, there are 130,000 annual subscribers. Citi Bike riders took an average of 38,491 rides per day in 2016, and the system reached a total of 50 million rides in October 2017
+
+We decided to analyze the Citi bike data because we wanted to bring insights out of something related us since we are living in NYC. We used Citi bike multiple times if there is a heavy traffic or even just to exercise little bit. We wanted to analyze what is going on with the usage of Citi bike data, not limiting ourselves from just using the bike for fun.
+
+
+## II. Description of the data source
+
+The link for the data source is here:
+https://www.citibikenyc.com/system-data
+
+
+If you go in there and click “downloadable files of Citi Bike trip data” you can see lists of downloadable files by each month in a csv type.
+
+Motivate international, a private company, is responsible of collecting the data. The company is a global leader in bike share. Motivate currently manages all of the largest bike shares systems such as Ford GoBike, Citi Bike, Divvy, Capital Bike Share, etc.
+
+Although Citi bike is managed by a private company, the collected data is part of New York City’s open data. Each bike and station has a unique code id and a GPS. In order to check out the bike, users have to either join an annual membership or buy a short-term pass through the Citi Bike app first. Then, they use the code from the app to unlock the bike. After users are done using the bike, they simply return to the nearest station. Through this process, Citi bike can automatically collect user’s gender and age from the app purchase information. Also, since each bike has a unique ID, we will be able to figure out the trip duration, check-out location and the check-in location. 
+
+We did not find any known issues/problems about the data. The data is clean. The only problem is that since they are providing the data in csv file, the size of each data is quite big.
+
+We used one month of data due to its size (240MB). It is from March 2019. The dataset has 1,327,960 rows and 16 columns. The feature contains: trip duration (in seconds), start time (in dates with time), stop time (in dates with time), start station id (numerical value), end station id (numerical value), start station name (Character), start station latitude (geocode), start station longitude (geocode), end station name (character), end station latitude (geocode), and end station longitude (geocode). So, this dataset has quantitative, categorical, chronological and geological types of data.
+
+
+## III. Description of data import / cleaning / transformation
+
+In order to analyze the data in the way we wanted, we had to go thorough couple data transformation steps. First, we downloaded the march Citibike data from the website as a CSV file. Since the file was compressed, we un-zipped the file and then imported the file into R.
+
+We deleted observations whose age is said to be more than the age of 100, which seems that data contain unlikely ones. The data only had the year born of the users, so we had to subtract from 2019 to get the actual age of each users.
+
+For the purposes of plotting the heatmap, it was necessary to wrangle the tidy data to get frequency of station usage for bike check-in and check-out and then to join the unique-by-station id data with the frequency data to produce the column of frequencies corresponding to the station id.
+
+For the EDA process, we converted numeric gender codes (0,1,2) into a character (Male, Female, Unknown) by using linked ifelse functions. In order to get a data by each hour, we extracted the time from the “starttime” and “stoptime” variables using a substring function.
+
+Also, we transformed the date data(numerical) into days data(categorical). We simply used weekdays function to the extracted date. For example, “2019-03-01” was converted into “Friday”.
+
+
+
+## IV. Analysis of missing values
+
+As the code below has shown, there are 10 observations that say “NULL” as strings in our data. We considered these observations as missing values and analyzed to find any patterns in missing values. However, the data have 1325943 observations and missing values are just 10 among them and we could not discover any patterns that missing values would have had. Therefore, we concluded that there was no distinctive patterns in missing values.
+
+```{r, message=FALSE}
+bike <- read_csv("201903-citibike-tripdata.csv")
+colSums(is.na(bike))
+is.null(bike)
+
+#NULL detected
+c(sum(bike$`start station id`=="NULL"),sum(bike$`start station name`=="NULL"),sum(bike$`end station id`=="NULL"),sum(bike$`end station name`=="NULL"))
+```
+
+
+
+## V. Results
+
+People are busy to meet their hectic schedules, getting their jobs done within deadlines, and at the same time, they are enormously losing their time to concentrate on their health. Some go to the gym on a daily basis, and some go out to take a walk or run at the beautiful Central Park in New York City, regardless of time. For those who think that they need to workout but can’t have appropriate time for it, Citi started providing public access to their Citi bike program in June 2013. It is easy to see a lot of bike stations have been placed on the almost every single street for an easy access.
+
+We are starting to get deep into the analysis from now on!
+
+```{r}
+#Data Cleaning & Modification
+bike$tripduration <- bike$tripduration/60 # in min
+bike$age <- 2019 - bike$`birth year`
+bike <- bike %>%
+  filter(age < 100)
+bike$gender <- ifelse(bike$gender == 1, "Male", ifelse(bike$gender == 2, "Female", "Unknown"))
+bike$date <- substr(bike$starttime,0,10)
+bike$days <- weekdays(ymd(bike$date))
+bike$days <- ordered(bike$days, levels=c("Monday", "Tuesday", "Wednesday", "Thursday", 
+"Friday", "Saturday", "Sunday"))
+bike$starthour <- substr(bike$starttime,12,13)
+bike$agegroup <- ifelse(bike$age < 20, "10s",
+                        ifelse(bike$age < 30, "20s",
+                               ifelse(bike$age < 40, "30s",
+                                      ifelse(bike$age < 50, "40s",
+                                             ifelse(bike$age < 60, "50s",
+                                                    ifelse(bike$age < 70, "60s",
+                                                           ifelse(bike$age < 80, "70s", "80+")))))))
+
+bike$gender <- as.factor(bike$gender)
+bike$date <- as.factor(bike$date)
+```
+
+First of all, how popular is this bike program? We take a look at the number of bike use throughout the week by gender.
+
+```{r}
+bike %>%
+  ggplot(aes(x=days, fill=gender)) +
+  geom_bar() + 
+  labs(title="Number of bike usage by gender per days", x="Days", y="Number of use") +
+  theme(
+    plot.title=element_text(color="red", size=14, face="bold.italic"),
+    axis.title.x=element_text(color="#993333", size=14, face="bold"),
+    axis.title.y=element_text(color="#993333", size=14, face="bold"))
+```
+
+The number of male riders is obviously greater than the number of female riders. On a week, Friday and Saturday are when people go out to enjoy riding!
+
+
+It has been know that the bike program has offered memberships with benefits so we wonder how many people would have been attracted by the memberships.
+```{r}
+bike %>%
+  group_by(usertype, gender) %>%
+  summarise(Count=n()) %>%
+  ggplot(aes(x=usertype, y=Count, fill=gender)) +
+  geom_bar(stat="identity", position = position_dodge()) +
+  labs(title="Subscribers vs Customers", x="Types", y="Count") +
+  theme(
+    plot.title=element_text(color="red", size=14, face="bold.italic"),
+    axis.title.x=element_text(color="#993333", size=14, face="bold"),
+    axis.title.y=element_text(color="#993333", size=14, face="bold"))
+```
+```{r}
+bike %>%
+  ggplot(aes(x=days, fill = usertype)) +
+  geom_bar() + 
+  labs(title="Number of bike usage by usertype per days", x="Days", y="Count") +
+  theme(
+    plot.title=element_text(color="red", size=14, face="bold.italic"),
+    axis.title.x=element_text(color="#993333", size=14, face="bold"),
+    axis.title.y=element_text(color="#993333", size=14, face="bold"))
+```
+
+The majority of riders have obtained their memberships! The interesting point is that the number of normal customers(without memberships) is increasing from Friday until Saturday and a little bit decrease on Sunday. Why would this happen? Those two graphs above demonstrate that people tend to enjoy riding on Friday and Saturday the most but not all the people would have the memberships because a lot of customers try to get the excitement of riding on the end of weeks!
+
+We are so much excited to know that a lot of people have been participating in the program. Another thing to consider when it comes to exercising is how long it lasts. Even though too much work might make you feel tired and unpleasant, the adequate workout time is necessary.
+
+```{r, warning=FALSE}
+bike %>%
+  ggplot(aes(x=tripduration, color=gender, fill=gender)) +
+  geom_density(alpha = .5) +
+  #facet_wrap(~gender) +
+  xlim(c(0,85)) +
+  labs(title="Density of trip duration", x="Trip duration(min)", y="Density") +
+  theme(
+    plot.title=element_text(color="red", size=14, face="bold.italic"),
+    axis.title.x=element_text(color="#993333", size=14, face="bold"),
+    axis.title.y=element_text(color="#993333", size=14, face="bold"))
+```
+
+This graph shows that most of people ride less than 20 minutes regardless of gender. The density graph of male rider gets higher around 5 minutes than that of female rider.
+
+Let's divide the groups into two, subscribers and customers and see how much different would they be.
+
+```{r, warning=FALSE}
+bike %>%
+  filter(usertype == "Subscriber") %>%
+  ggplot(aes(x=tripduration, color=gender, fill=gender)) +
+  geom_density(alpha=.5) +
+  xlim(c(0,85)) +
+  labs(title="Subscribers", x="Trip duration(min)", y="Density") +
+  theme(
+    plot.title=element_text(color="red", size=14, face="bold.italic"),
+    axis.title.x=element_text(color="#993333", size=14, face="bold"),
+    axis.title.y=element_text(color="#993333", size=14, face="bold"))
+```
+
+```{r, warning=FALSE}
+bike %>%
+  filter(usertype == "Customer") %>%
+  ggplot(aes(x=tripduration, color=gender, fill=gender)) +
+  geom_density(alpha=.5) +
+  xlim(c(0,85)) +
+  labs(title="Customers", x="Trip duration(min)", y="Density") +
+  theme(
+    plot.title=element_text(color="red", size=14, face="bold.italic"),
+    axis.title.x=element_text(color="#993333", size=14, face="bold"),
+    axis.title.y=element_text(color="#993333", size=14, face="bold"))
+```
+
+Two density graphs show definitely different movements between two groups, subscribers and non-subscribers. Subscribers tend to use less than 15 minutes while non-subscribers tend to use a lot more. It is likely to think that non-subcribers are not regular users, including one-time users, so that they might want to enjoy as much as they want when they firstly or rarely ride the bikes.
+
+
+Summarizing the results above, the following graph tells that Non-subscribers(Customer) tend to use the bike system longer than regular riders do.
+
+```{r, warning=FALSE, message=FALSE}
+bike %>%
+  ggplot(aes(x=tripduration, y=reorder(gender,-tripduration,median), fill = reorder(gender,tripduration,median))) +
+  #geom_density(alpha = .5) +
+  facet_wrap(~usertype) +
+  xlim(c(0,85)) +
+  geom_density_ridges(alpha = .5)+
+  labs(title="Density plots", x="Trip duration(min)", y="Gender") +
+  scale_fill_discrete(name = "Gender", labels = c("Male", "Female", "Unknown")) +
+  theme(
+    plot.title=element_text(color="red", size=14, face="bold.italic"),
+    axis.title.x=element_text(color="#993333", size=14, face="bold"),
+    axis.title.y=element_text(color="#993333", size=14, face="bold"))
+```
+
+
+The following plot shows the frequency of rides with respect to time. It seems to show some pattern that the number of riders are getting greater as it comes to the end of the month. The biggest different in number is found on Friday and Saturday. At the beginning of the report, Friday and Saturday are most popular days in a week for riders to enjoy outdoors however this plot might tell a different story. For example, March 02, 2019 is Saturday and it has the lowest record in the month. However, the important thing to consider when interpretting this plot is the number of riders are getting greater as it comes to the end of the month and such point can be observed on March 30, 2019 when the most riders made the trips! 
+
+```{r}
+bike %>%
+  group_by(date) %>%
+  summarise(n=n()) %>%
+  ggplot(aes(x=date, y=n, group=1)) +
+  geom_line() +
+  labs(title="Number of trips by dates in March, 2019", x="Day time", y="Count") +
+  theme(
+    plot.title = element_text(color="red", size=14, face="bold.italic"),
+    axis.title.x = element_text(color="#993333", size=14, face="bold"),
+    axis.title.y = element_text(color="#993333", size=14, face="bold")) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+```{r}
+Subs.time <- bike %>%
+  group_by(starthour) %>%
+  filter(usertype == "Subscriber") %>%
+  summarise(count=n())
+Cust.time <- bike %>%
+  group_by(starthour) %>%
+  filter(usertype == "Customer") %>%
+  summarise(count=n())
+Subs.time$customer <- Cust.time$count
+legtitle <- list(yref='paper',xref="paper",y=1.05,x=1.1, text="Usertype",showarrow=F)
+plot_ly(Subs.time, x=~starthour, y=~count, type='scatter', mode='lines', name="Subscriber") %>%
+  add_trace(y=~customer, mode="lines", line=list(width=2), name="Non-subscriber") %>%
+  layout(title="Bike usage by hours",xaxis=list(title="Hours"),yaxis=list(title="Counts"), annotations=legtitle, legend = list(x = 0.05, y = 0.9))
+```
+
+We wanted to see the bike usage by usertype for each hour of the day. There are two usertypes: subscriber and customer. As we can see from the graph above, there is no correlation in bike usage between subscribers and non-subscribers. They peak at different time periods of the day. Subscriber usage peaks at 8am and 5-6pm. The peaks happen most likely because of rush-hours. Also, the usage increases a lot from 11am to 1pm because of the lunch time. On the other hand, non-subscribers peaks at early afternoon periods, from 1pm to 4pm. We think that the non-subscibers are short-term users, who are most likely tourists or visitors traveling during the day.
+
+```{r}
+#By age
+age.days <- bike %>%
+  group_by(days, agegroup) %>%
+  summarize(count=n())
+age.days.dat <- as.data.frame(filter(age.days, agegroup == "10s")[,c("days","count")])
+age.days.dat <- cbind(age.days.dat, filter(age.days, agegroup == "20s")[,c("count")],filter(age.days, agegroup == "30s")[,c("count")],filter(age.days, agegroup == "40s")[,c("count")],filter(age.days, agegroup == "50s")[,c("count")],filter(age.days, agegroup == "60s")[,c("count")],filter(age.days, agegroup == "70s")[,c("count")],filter(age.days, agegroup == "80+")[,c("count")])
+colnames(age.days.dat) <- c("days","10s", "20s", "30s", "40s", "50s", "60s", "70s","80+")
+
+legendtitle <- list(yref='paper',xref="paper",y=1.05,x=1.1, text="Age group",showarrow=F)
+age.days.dat %>%
+  plot_ly(x=~days, y=~`10s`, type='scatter', mode='lines', name="10s") %>%
+  add_trace(y=~`20s`, mode="lines", line=list(width=2), name="20s") %>%
+  add_trace(y=~`30s`, mode="lines", line=list(width=2), name="30s") %>%
+  add_trace(y=~`40s`, mode="lines", line=list(width=2), name="40s") %>%
+  add_trace(y=~`50s`, mode="lines", line=list(width=2), name="50s") %>%
+  add_trace(y=~`60s`, mode="lines", line=list(width=2), name="60s") %>%
+  add_trace(y=~`70s`, mode="lines", line=list(width=2), name="70s") %>%
+  add_trace(y=~`80+`, mode="lines", line=list(width=2), name="80+") %>%
+  layout(title="Bike usage by days", xaxis=list(title="Days"), yaxis=list(title="Counts"), annotations=legendtitle)
+```
+
+We also wanted to see the bike usage by age group throughout the weekdays and weekend. We decided to divide the age into 8 groups. Each age group contains 10 years range of age, except the first and the last group - under 20s and over 80s.
+
+***
+
+Lastly, we took a look at the top 10 popular stations for riders to go to check out their bikes. This analysis may be helpful for the management team.
+
+```{r, message=FALSE}
+#start station
+a<-bike %>%
+  select(`start station id`,`start station latitude`,`start station longitude`,`start station name`) %>%
+  unique()
+b<-bike %>%
+  group_by(`start station id`) %>%
+  summarise(count=n())
+abjoin<-left_join(a,b) %>%
+  arrange(desc(count))
+```
+```{r}
+#bar plot of top popular stations(frequency of station usage for bike check-out)
+abjoin%>%
+  head(10) %>%
+  ggplot(aes(x=reorder(`start station id`,-count), y=count)) +
+  geom_bar(stat="identity", fill="lightblue", col="blue") +
+  labs(title="Start Station for check-out", x="Station ID", y="Count") +
+  theme(
+    plot.title = element_text(color="red", size=14, face="bold.italic"),
+    axis.title.x = element_text(color="#993333", size=14, face="bold"),
+    axis.title.y = element_text(color="#993333", size=14, face="bold"))
+```
+
+In order to get a better visualization of the locations of the top 10 stations, these stations are marked in the map with a heatmap showing its popularity as well.
+
+
+```{r, message=FALSE}
+top10id <- head(abjoin,10)$`start station id`
+top10lat <- head(abjoin,10)$`start station latitude`
+top10lng <- head(abjoin,10)$`start station longitude`
+top10name <- head(abjoin,10)$`start station name`
+
+leaflet(abjoin) %>%
+  addTiles() %>%
+  setView(-73.9787, 40.74, zoom = 12.55) %>%
+  addMarkers(lng=top10lng , lat=top10lat, label=top10id, labelOptions = labelOptions(noHide=T)
+             ) %>%
+  #addPopups(lng=top10lng , lat=top10lat, top10name, options=popupOptions(closeButton = T)) %>%
+  addHeatmap(lng = ~ `start station longitude`, lat = ~ `start station latitude`,
+             intensity = ~ count,
+             blur= 20, radius = 15)
+```
+
+As it shows, most of the top 10 stations are located in midtown area.
+
+## VI. Interactive component
+
+Here is the link for the Shiny app:
+ https://daniel-dh-lee.shinyapps.io/shiny_app/
+
+
+However, we are having unexpected error where it keeps saying to reload the page and the plot would not show up.
+Here is a instruction to run our app locally.
+1. Download the app.R and help.R file from github
+Link: https://github.com/donglezz/test
+2. Download the March 2019 Citi bike data. (preferably same workspace as the app.R file)
+Link: https://s3.amazonaws.com/tripdata/index.html
+![an image caption Source: Ultimate Funny Dog Videos Compilation 2013.](shiny.png)
+3. Un-zip the file
+4. Launch app.R at R studio
+5. Un-hash the code blocks and run it (I indicated in the file also)
+6. Run the ui code block
+7. Run the server code block
+8. Run ShinyApp(ui, server) line
+
+
+For the interactive plot, we chose to use the Shiny dashboard. The dashboard has three tabs and each shows a histogram, time series plot and a geological heat map. The default histogram shows the distribution of users by each dates in march. It has two interactive buttons - the filter box and the slider. For the filter box, users can see the histogram by gender by clicking each gender. The default is set as Male. The slider controls the number of bin size of each histogram. The default is set as 31 because there are 31 days in march. The user can drag the button on the slider to either increase or decrease the bin size.
+
+The second tab shows the time series plot. It basically shows the total number of rides on each dates of march. The users can mouse over to see the actual counts of each dates. Also, users can drag the box below the plot to customize the timeframe of the plot.
+
+For the third tab, we have a heatmap of the station usage. The default plot shows the heatmap by start station popularity. This plot has three interactive options - filter box, zoom in/out and dragging. Filter box has two options - start station and end station. If the user clicks the end station, the plot changes into the heatmap by end station popularity. Also, users can zoom in/out to see specific area in detail. Lastly, users can drag the map to move the map into any directions.
+
+We can easily see that there are many popular stations around the central park and the harlem area. It was interesting to see the gap between manhattan and Bronx area. We assume that there are no bike stations between the north-end of manhattan and Bronx. Bronx seem have its own stations. When we change from start station to end station heatmap, we can see a new pattern. The most distinguishable one is that there are much more popularity in New Jersey area and Brooklyn area. 
+
+**We were not able to remove the white box in the background to enhance the visibility. The professor told us to not worry about it.**
+
+
+## VII. Conclusion
+
+Discuss limitations and future directions, lessons learned.
+
+Limitations: we were not able to analyze the whole year cycle or couple years cycle because the size of the data. The dataset is very clean and well-organized, but contains around 10 NULL values. Out of 1.3 million observations, this is a very miniscule problem. We had a limited GPS data, because the dataset  had latitudes and longitudes of where the bikes were checked out and checked in. If we had a full GPS data of the path in fixed intervals, we could have build a plot that shows the actual trip paths of each bikes.
+
+Future directions: It would have been better if we had more features in the dataset. For example, we could have done another analysis if we had the weather data and see the correlation of the bike usage vs temperature or bike usage vs weather conditions. Apart from additional data, if we analyze more than one month of data, we will be able to see more clear trends and have more confidence in our analysis or assumptions.
+
+Lessons learned: A lot of people use the Citi bike than we expected and the age range of users is quite wide. We can clearly see that Citi bike is a favorable public transportation by full-time workers. For the maintenance purposes, Motive could prioritize popular stations for more efficient repairs. This could possibly cut the cost they are spending on precautionary measures. 
+
