@@ -13,37 +13,6 @@
 - [Results](#results)
 - [Conclusion](#conclusion)
 
-
-- [Signing and Sending Transaction](#signing-and-sending-transaction)
-  - [Generating a Transaction](#generating-a-transaction)
-  - [Signing a Transaction](#signing-a-transaction)
-  - [Sending a Transaction](#sending-a-transaction)
-  - [Examples](#examples-2)
-  - [TransactionBuilder](#transactionbuilder)
-    - [set methods](#set-methods)
-    - [Returns](#returns-14)
-    - [Example](#example-14)
-  - [DeployTransactionBuilder](#deploytransactionbuilder)
-    - [methods](#methods)
-    - [Returns](#returns-15)
-    - [Example](#example-15)
-  - [CallTransactionBuilder](#calltransactionbuilder)
-    - [methods](#methods-1)
-    - [Returns](#returns-16)
-    - [Example](#example-16)
-  - [MessageTransactionBuilder](#messagetransactionbuilder)
-    - [methods](#methods-2)
-    - [Returns](#returns-17)
-    - [Example](#example-17)
-  - [SignedTransaction](#signedtransaction)
-    - [Parameters](#parameters-14)
-    - [Returns](#returns-18)
-    - [Example](#example-18)
-  - [send_transaction](#send_transaction)
-    - [Parameters](#parameters-15)
-    - [Returns](#returns-19)
-    - [Example](#example-19)
-
 <!-- /TOC -->
 
 
