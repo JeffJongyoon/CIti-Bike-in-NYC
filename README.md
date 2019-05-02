@@ -11,6 +11,7 @@
 - [Description of the data source](#description-of-the-data-source)
 - [Analysis of missing values](#analysis-of-missing-values)
 - [Results](#results)
+- [Interactive Component](#interactive-component)
 - [Conclusion](#conclusion)
 
 <!-- /TOC -->
@@ -59,6 +60,9 @@ library(plotly)
 ## Analysis of missing values
 
 ## Results
+
+## Interactive component
+
 
 ## Conclusion
 
