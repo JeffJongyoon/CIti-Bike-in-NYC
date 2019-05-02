@@ -1,8 +1,58 @@
 # CIti-Bike-in-NYC
 
 
-Co-participant: Daniel Lee
+<!-- TOC depthFrom:1 depthTo:6 withLinks:1 updateOnSave:1 orderedList:0 -->
 
+## Table of Contents
+
+- [Quick Start](#quick-start)
+  - [Technical Requirements](#techincla-requirements)
+- [Introduction](#introduction)
+- [Description of the data source](#description-of-the-data-source)
+- [Analysis of missing values](#analysis-of-missing-values)
+- [Results](#results)
+- [Conclusion](#conclusion)
+
+
+- [Signing and Sending Transaction](#signing-and-sending-transaction)
+  - [Generating a Transaction](#generating-a-transaction)
+  - [Signing a Transaction](#signing-a-transaction)
+  - [Sending a Transaction](#sending-a-transaction)
+  - [Examples](#examples-2)
+  - [TransactionBuilder](#transactionbuilder)
+    - [set methods](#set-methods)
+    - [Returns](#returns-14)
+    - [Example](#example-14)
+  - [DeployTransactionBuilder](#deploytransactionbuilder)
+    - [methods](#methods)
+    - [Returns](#returns-15)
+    - [Example](#example-15)
+  - [CallTransactionBuilder](#calltransactionbuilder)
+    - [methods](#methods-1)
+    - [Returns](#returns-16)
+    - [Example](#example-16)
+  - [MessageTransactionBuilder](#messagetransactionbuilder)
+    - [methods](#methods-2)
+    - [Returns](#returns-17)
+    - [Example](#example-17)
+  - [SignedTransaction](#signedtransaction)
+    - [Parameters](#parameters-14)
+    - [Returns](#returns-18)
+    - [Example](#example-18)
+  - [send_transaction](#send_transaction)
+    - [Parameters](#parameters-15)
+    - [Returns](#returns-19)
+    - [Example](#example-19)
+
+<!-- /TOC -->
+
+
+
+## Quick Start
+
+### Technical Requirements
+
+R and Shiny application were used to demonstrate the data visualization.
 
 ## Introduction:
 
@@ -12,13 +62,43 @@ As of July 2017, there are 130,000 annual subscribers. Citi Bike riders took an 
 
 We decided to analyze the Citi bike data because we wanted to bring insights out of something related us since we are living in NYC. We used Citi bike multiple times if there is a heavy traffic or even just to exercise little bit. We wanted to analyze what is going on with the usage of Citi bike data, not limiting ourselves from just using the bike for fun.
 
-## Conclusion:
+
+## Description of the data source
+
+The **link** for the data source is [Here](https://www.citibikenyc.com/system-data).
+
+If you go in there and click “downloadable files of Citi Bike trip data” you can see lists of downloadable files by each month in a csv type.
+
+Motivate international, a private company, is responsible of collecting the data. The company is a global leader in bike share. Motivate currently manages all of the largest bike shares systems such as Ford GoBike, Citi Bike, Divvy, Capital Bike Share, etc.
+
+
+Here are the packages needed for the project.
+
+```r
+library(tidyverse)
+library(lubridate)
+library(shiny)
+library(leaflet)
+library(leaflet.extras)
+library(magrittr)
+library(ggridges)
+library(ggplot2)
+library(dplyr)
+library(plotly)
+```
+
+## Analysis of missing values
+
+## Results
+
+## Conclusion
 
 Limitations: we were not able to analyze the whole year cycle or couple years cycle because the size of the data. The dataset is very clean and well-organized, but contains around 10 NULL values. Out of 1.3 million observations, this is a very miniscule problem. We had a limited GPS data, because the dataset had latitudes and longitudes of where the bikes were checked out and checked in. If we had a full GPS data of the path in fixed intervals, we could have build a plot that shows the actual trip paths of each bikes.
 
 Future directions: It would have been better if we had more features in the dataset. For example, we could have done another analysis if we had the weather data and see the correlation of the bike usage vs temperature or bike usage vs weather conditions. Apart from additional data, if we analyze more than one month of data, we will be able to see more clear trends and have more confidence in our analysis or assumptions.
 
 Lessons learned: A lot of people use the Citi bike than we expected and the age range of users is quite wide. We can clearly see that Citi bike is a favorable public transportation by full-time workers. For the maintenance purposes, Motive could prioritize popular stations for more efficient repairs. This could possibly cut the cost they are spending on precautionary measures.
+
 
 ## Notes:
 + _/analysis_ folder stores the _report.html_, _report.rmd_, _header.html_, _footer.html_, and _style.css_:
@@ -27,6 +107,4 @@ Lessons learned: A lot of people use the Citi bike than we expected and the age 
 	+ _header.html_ contains the stylesheet of our font--[Open Sans](https://fonts.google.com/specimen/Open+Sans) and the [GitHub icon](https://github.com/tholman/github-corners) in the upper-right corner.
 	+ _footer.html_ contains the codes for creating the [footer](https://holtzy.github.io/Pimp-my-rmd/#footer_and_header)
 	+ _style.css_ contains the stylesheet
-+ _/r_ folder stores the codes for collecting data. The raw data is stored under _/data/raw_ folder and the processed data is stored under _/data/tidy_.
-+ _/NBA_15years_ stores the codes for creating the shiny app. The link to our shiny app is https://cy2507.shinyapps.io/NBA_15years/.
-+ _/image_ folder contains report-decorative images and the screen shots of our shiny app.
+	
